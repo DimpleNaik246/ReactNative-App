@@ -13,32 +13,43 @@ const initialState = {
 
 const UserReducer = (state = initialState, action) => {
     switch (action.type) {
+
         case 'LOGIN':
-            const user = state.users.find(user => user.email === action.payload.email);
-            if (user) {
-                if (user.password === action.payload.password) {
-                    return {
-                        ...state,
-                        email: action.payload.email,
-                        isLoggedIn: true,
-                    };
+            console.log(action.payload);
+            if (action.payload.email.authMethod === 'Google' || action.payload.email.authMethod === 'Facebook') {
+                return {
+                    ...state,
+                    email: action.payload.email.email,
+                    isLoggedIn: true,
+                };
+            } else {
+                const user = state.users.find(user => user.email === action.payload.email);
+
+                if (user) {
+                    if (user.password === action.payload.password) {
+                        return {
+                            ...state,
+                            email: action.payload.email,
+                            isLoggedIn: true,
+                        };
+                    } else {
+                        Alert.alert('Incorrect Password');
+                        return state;
+                    }
                 } else {
-                    Alert.alert('Incorrect Password');
+                    Alert.alert('User not found, please register first');
                     return state;
                 }
-            } else {
-                Alert.alert('User not found, please register first');
-                return state;
             }
 
+
         case 'REGISTER':
-            
             const existingUser = state.users.find(user => user.email === action.payload.email);
             if (existingUser) {
                 Alert.alert('User already exists');
                 return state;
             }
-            
+
             return {
                 ...state,
                 users: [...state.users, { email: action.payload.email, password: action.payload.password }],
@@ -49,7 +60,6 @@ const UserReducer = (state = initialState, action) => {
             };
 
         case 'LOGOUT':
-            
             console.log(`User with ${action.payload.email} has logged out!`);
             return {
                 ...state,
@@ -58,24 +68,34 @@ const UserReducer = (state = initialState, action) => {
                 imageInp: '',
                 isLoggedIn: false,
             };
+
         case 'SET_DOB':
             return {
                 ...state,
                 dob: action.payload.dob,
             };
+
         case 'SET_IMAGE':
             return {
                 ...state,
                 imageInp: action.payload.imageInp,
             };
+
+        case 'GOOGLE_SIGN_IN':
+            return {
+                ...state,
+                email: action.payload.email,
+                isLoggedIn: true,
+            };
+
         default:
             return state;
     }
 };
 
-export const loginAction = (email, password) => ({
+export const loginAction = (email, password=null, authMethod = 'Email') => ({
     type: 'LOGIN',
-    payload: { email, password },
+    payload: { email, password, authMethod },
 });
 
 export const registerAction = (email, password, dob, imageInp) => ({
@@ -96,6 +116,11 @@ export const setDobAction = (dob) => ({
 export const setImageAction = (imageInp) => ({
     type: 'SET_IMAGE',
     payload: { imageInp },
+});
+
+export const googleSignInAction = (email) => ({
+    type: 'GOOGLE_SIGN_IN',
+    payload: { email },
 });
 
 export default UserReducer;

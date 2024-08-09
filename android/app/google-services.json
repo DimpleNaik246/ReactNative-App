@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "861690191578",
+    "project_id": "reactnative1-fba68",
+    "storage_bucket": "reactnative1-fba68.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:861690191578:android:e252087c65d703cfc70fe3",
+        "android_client_info": {
+          "package_name": "com.reactnative1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAoduhoQNqlGsDgbpjyeZtKH9EPIrkXiEU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

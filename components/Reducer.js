@@ -1,10 +1,7 @@
-import { ADD_TODO, TOGGLE_TODO, DELETE_TODO } from "./Action";
-import {persistReducer} from 'redux-persist;'
+import { ADD_TODO, TOGGLE_TODO, DELETE_TODO, SET_TODOS, UPDATE_TODO } from "./Action";
 
 const initialState = {
-    todos: [
-        { id: 1, text: 'Sample', completed: false }
-    ],
+    todos: [],
 };
 
 const todoReducer = (state = initialState, action) => {
@@ -14,10 +11,10 @@ const todoReducer = (state = initialState, action) => {
                 ...state,
                 todos: [
                     ...state.todos,
-                    { id: Date.now(), text: action.payload.text, completed: false }
+                    { id: action.payload.id, text: action.payload.text, completed: false }
                 ],
             };
-        
+
         case TOGGLE_TODO:
             return {
                 ...state,
@@ -27,17 +24,32 @@ const todoReducer = (state = initialState, action) => {
                         : todo
                 ),
             };
-        
+
         case DELETE_TODO:
             return {
                 ...state,
                 todos: state.todos.filter(todo => todo.id !== action.payload.id),
             };
 
+        case SET_TODOS:
+            return {
+                ...state,
+                todos: action.payload,
+            };
+
+        case UPDATE_TODO:
+            return {
+                ...state,
+                todos: state.todos.map(todo =>
+                    todo.id === action.payload.id
+                        ? { ...todo, text: action.payload.text }
+                        : todo
+                ),
+            };
+
         default:
             return state;
     }
 };
-
 
 export default todoReducer;

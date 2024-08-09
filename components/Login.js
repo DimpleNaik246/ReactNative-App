@@ -1,25 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Text, TextInput, View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, View, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Yup from 'yup';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { loginAction } from './UserReducer';
-import {useSelector} from 'react-redux';
-
+import { LoginManager, Profile, AccessToken } from 'react-native-fbsdk-next';
+import { IconButton, TextInput as PaperInput, Button as PaperButton } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
 
 const Login = () => {
   const navigation = useNavigation();
-  const dispatch = useDispatch(); 
+  const dispatch = useDispatch();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const isLoggedIn = useSelector((state) => state.user.isLoggedIn);
+  const { colors } = useTheme();
 
+  useEffect(() => {
+    GoogleSignin.configure();
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigation.navigate('Home');
+    }
+  }, [isLoggedIn, navigation]);
 
   useEffect(() => {
     if (!isLoggedIn) {
-        setEmail('');
-        setPassword('');
+        setEmail(''); 
+        setPassword(''); 
     }
 }, [isLoggedIn]);
 
@@ -55,37 +67,117 @@ const Login = () => {
     navigation.navigate('SignUp');
   };
 
+  const onGoogleButtonPress = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      console.log("User Info:", userInfo);
+
+      dispatch(loginAction({ email: userInfo.user.email, authMethod: 'Google' }));
+
+      Alert.alert('Success', 'Signed in with Google!', [{ text: 'OK', onPress: () => navigation.navigate('Home') }]);
+    } catch (error) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        Alert.alert('Sign-In Cancelled', 'You cancelled the sign-in process.');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        Alert.alert('Sign-In In Progress', 'Sign-in is already in progress.');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Play Services Not Available', 'Google Play Services are not available or outdated.');
+      } else {
+        Alert.alert('Error', 'An unknown error occurred.');
+      }
+    }
+  };
+
+  const onFacebookButtonPress = async () => {
+    try {
+      const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+      if (result.isCancelled) {
+        throw 'User cancelled the login process';
+      }
+
+      const data = await AccessToken.getCurrentAccessToken();
+      if (!data) {
+        throw 'Something went wrong obtaining access token';
+      }
+
+      const profile = await Profile.getCurrentProfile();
+      if (profile) {
+        dispatch(loginAction({ email: profile.email, password: null, authMethod: 'Facebook' }));
+        Alert.alert('Success', 'Signed in with Facebook!', [{ text: 'OK', onPress: () => navigation.navigate('Home') }]);
+      }
+    } catch (error) {
+      console.log('Login failed with error: ' + error);
+      Alert.alert('Error', error);
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await GoogleSignin.signOut();
+      console.log('User signed out');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#999"
-        onChangeText={setEmail}
+      <PaperInput
+        mode="outlined"
+        label="Email"
         value={email}
+        onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        style={styles.input}
+        theme={{ colors: { primary: colors.primary } }}
       />
       {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#999"
-        onChangeText={setPassword}
+      <PaperInput
+        mode="outlined"
+        label="Password"
         value={password}
+        onChangeText={setPassword}
         secureTextEntry
+        style={styles.input}
+        theme={{ colors: { primary: colors.primary } }}
       />
       {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
+      <PaperButton mode="contained" onPress={handleLogin} style={styles.button}>
+        Login
+      </PaperButton>
 
-      <TouchableOpacity style={[styles.button, styles.signupButton]} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Sign Up</Text>
-      </TouchableOpacity>
+      <PaperButton mode="contained" onPress={handleSignUp} style={[styles.button, styles.signupButton]}>
+        Sign Up
+      </PaperButton>
+
+      <View style={styles.socialButtonsContainer}>
+        <IconButton
+          icon="google"
+          color="#ffffff"
+          size={24}
+          onPress={onGoogleButtonPress}
+          style={styles.socialButton}
+        />
+
+        <Text style={styles.orText}>OR</Text>
+
+        <IconButton
+          icon="facebook"
+          color="#ffffff"
+          size={24}
+          onPress={onFacebookButtonPress}
+          style={styles.socialButton}
+        />
+      </View>
+
+      <PaperButton mode="outlined" onPress={signOut} style={styles.signOutButton}>
+        Sign Out
+      </PaperButton>
     </View>
   );
 };
@@ -98,47 +190,45 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f4f7',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
     marginBottom: 30,
   },
   input: {
-    height: 50,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    fontSize: 16,
     marginBottom: 15,
-    color: 'black',
-    borderColor: '#ddd',
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
   },
   errorText: {
     color: 'red',
+    fontSize: 14,
     marginBottom: 10,
     marginLeft: 5,
   },
   button: {
-    backgroundColor: '#6200ea',
-    paddingVertical: 15,
-    borderRadius: 10,
     marginTop: 10,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    borderRadius: 10,
   },
   signupButton: {
     backgroundColor: '#03dac6',
+  },
+  socialButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  socialButton: {
+    marginHorizontal: 10,
+  },
+  orText: {
+    color: '#333',
+    fontSize: 16,
+    marginHorizontal: 10,
+  },
+  signOutButton: {
+    marginTop: 20,
+    borderRadius: 10,
   },
 });
 

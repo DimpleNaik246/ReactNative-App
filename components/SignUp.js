@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux';
 import DatePicker from 'react-native-date-picker';
 import FastImage from 'react-native-fast-image';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { registerAction, setDobAction, setImageAction } from './UserReducer';
+import { registerAction } from './UserReducer';
 import { useNavigation } from '@react-navigation/native';
 
 const SignUp = () => {
